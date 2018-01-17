@@ -22,6 +22,7 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "  %s [options...] <templates...>\n\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	flag.PrintDefaults()
+	fmt.Fprintf(os.Stderr, "\n")
 }
 
 func main() {
@@ -29,25 +30,23 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	// Flag validation
-	if *dataFile == "" {
-		log.Fatalf("-values is required")
-	}
+	values := make(map[string]interface{})
+	if *dataFile != "" {
+		// Slurp the data file as one byteslice
+		data, err := ioutil.ReadFile(*dataFile)
+		if err != nil {
+			log.Fatalf("Cannot read file %s: %v", dataFile, err)
+		}
 
-	// Slurp the data file as one byteslice
-	data, err := ioutil.ReadFile(*dataFile)
-	if err != nil {
-		log.Fatalf("Cannot read file %s: %v", dataFile, err)
-	}
-
-	// Parse the data file into values
-	var values map[string]interface{}
-	if err := yaml.Unmarshal(data, &values); err != nil {
-		log.Fatalf("Cannot parse values from %s: %v", dataFile, err)
+		// Parse the data file into values
+		if err := yaml.Unmarshal(data, &values); err != nil {
+			log.Fatalf("Cannot parse values from %s: %v", dataFile, err)
+		}
 	}
 
 	// Render either to STDOUT or to a file
 	var out *os.File
+	var err error
 	if *outFile == "" || *outFile == "-" {
 		out = os.Stdout
 	} else {
