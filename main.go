@@ -17,7 +17,11 @@ var (
 	outFile  = flag.String("out", "-", "Output file (or '-' for STDOUT)")
 )
 
+var BuildDate string
+var BuildVersion string
+
 func usage() {
+	fmt.Fprintf(os.Stderr, "%s v%s built %s\n\n", os.Args[0], BuildVersion, BuildDate)
 	fmt.Fprintf(os.Stderr, "Usage:\n")
 	fmt.Fprintf(os.Stderr, "  %s [options...] <templates...>\n\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "Options:\n")
