@@ -3,7 +3,13 @@
 A very simplistic CLI tool that allows rendering arbitrary text/template files,
 pulling data in from any YAML file.
 
-Get it:
+There's a docker image:
+
+```
+docker pull ripta/tpl
+```
+
+Or, get it from the source:
 
 ```
 go get github.com/ripta/tpl
