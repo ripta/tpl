@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"text/template"
 
 	"gopkg.in/yaml.v2"
@@ -66,28 +67,57 @@ func main() {
 		os.Exit(-1)
 	}
 
-	for _, f := range flag.Args() {
-		tpl, err := template.ParseFiles(f)
+	for _, fn := range flag.Args() {
+		f, err := os.Open(fn)
 		if err != nil {
-			log.Fatalf("Cannot parse template %s: %v", f, err)
+			log.Fatalf("%v\n", err)
 		}
 
-		if *onError == "ignore" {
-			tpl.Option("missingkey=zero")
-		} else {
-			tpl.Option("missingkey=error")
+		fi, err := f.Stat()
+		if err != nil {
+			log.Fatalf("%v\n", err)
 		}
 
-		err = tpl.Execute(out, values)
+		// Render files directly
+		if !fi.IsDir() {
+			render(out, values, fn)
+			continue
+		}
+
+		// Loop through each file in a directory and render it
+		eis, err := f.Readdirnames(-1)
 		if err != nil {
-			switch *onError {
-			case "ignore", "quiet":
-				// print nothing, but still fail
-			case "warn":
-				log.Printf("Cannot render template %s: %v", f, err)
-			default:
-				log.Fatalf("Cannot render template %s: %v", f, err)
-			}
+			log.Fatalf("%v", err)
+		}
+		for _, ei := range eis {
+			render(out, values, filepath.Join(fn, ei))
+		}
+	}
+}
+
+func render(out *os.File, values map[string]interface{}, f string) {
+	log.Printf("Rendering %s\n", f)
+
+	tpl, err := template.ParseFiles(f)
+	if err != nil {
+		log.Fatalf("Cannot parse template %s: %v", f, err)
+	}
+
+	if *onError == "ignore" {
+		tpl.Option("missingkey=zero")
+	} else {
+		tpl.Option("missingkey=error")
+	}
+
+	err = tpl.Execute(out, values)
+	if err != nil {
+		switch *onError {
+		case "ignore", "quiet":
+			// print nothing, but still fail
+		case "warn":
+			log.Printf("Cannot render template %s: %v", f, err)
+		default:
+			log.Fatalf("Cannot render template %s: %v", f, err)
 		}
 	}
 }
