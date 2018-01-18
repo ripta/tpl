@@ -18,7 +18,7 @@ go get github.com/ripta/tpl
 Run it:
 
 ```
-tpl -values=data/a.yaml -out=rendered.txt data/template.txt
+tpl -values=test/data/a.yaml -out=rendered.txt test/templates/ok.tpl
 ```
 
 Multiple templates can be provided on the command line. Each template is
