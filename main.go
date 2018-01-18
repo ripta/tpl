@@ -55,7 +55,7 @@ func main() {
 	if *outFile == "" || *outFile == "-" {
 		out = os.Stdout
 	} else {
-		out, err = os.OpenFile(*outFile, os.O_RDWR|os.O_CREATE, 0644)
+		out, err = os.OpenFile(*outFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			log.Fatalf("Cannot open output file %s: %v", *outFile, err)
 		}
