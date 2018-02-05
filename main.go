@@ -98,7 +98,7 @@ func main() {
 func render(out *os.File, values map[string]interface{}, f string) {
 	log.Printf("Rendering %s\n", f)
 
-	tpl, err := template.ParseFiles(f)
+	tpl, err := template.New(filepath.Base(f)).ParseFiles(f)
 	if err != nil {
 		log.Fatalf("Cannot parse template %s: %v", f, err)
 	}
