@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/Masterminds/sprig"
 	"gopkg.in/yaml.v2"
 )
 
@@ -98,7 +99,7 @@ func main() {
 func render(out *os.File, values map[string]interface{}, f string) {
 	log.Printf("Rendering %s\n", f)
 
-	tpl, err := template.New(filepath.Base(f)).ParseFiles(f)
+	tpl, err := template.New(filepath.Base(f)).Funcs(sprig.TxtFuncMap()).ParseFiles(f)
 	if err != nil {
 		log.Fatalf("Cannot parse template %s: %v", f, err)
 	}
