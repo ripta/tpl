@@ -41,12 +41,12 @@ func main() {
 		// Slurp the data file as one byteslice
 		data, err := ioutil.ReadFile(*dataFile)
 		if err != nil {
-			log.Fatalf("Cannot read file %s: %v", dataFile, err)
+			log.Fatalf("Cannot read file %s: %v", *dataFile, err)
 		}
 
 		// Parse the data file into values
 		if err := yaml.Unmarshal(data, &values); err != nil {
-			log.Fatalf("Cannot parse values from %s: %v", dataFile, err)
+			log.Fatalf("Cannot parse values from %s: %v", *dataFile, err)
 		}
 	}
 
