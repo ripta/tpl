@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	dataFile = flag.String("values", "", "YAML file containing values")
+	dataFile = flag.String("values", "", "Comma-separated paths to YAML files containing values (only top-level keys are merged)")
 	onError  = flag.String("on-error", "die", "What to do on render error: die, warn, quiet (stop processing without printing), ignore (continue rendering)")
 	outFile  = flag.String("out", "-", "Output file (or '-' for STDOUT)")
 	valueMap = make(valueMapFlag)
@@ -27,6 +28,9 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "%s v%s built %s\n\n", os.Args[0], BuildVersion, BuildDate)
 	fmt.Fprintf(os.Stderr, "Usage:\n")
 	fmt.Fprintf(os.Stderr, "  %s [options...] <templates...>\n\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "where <templates...> may be one or more template files or directories.")
+	fmt.Fprintf(os.Stderr, "Directories are processed only single depth.")
+	fmt.Fprintf(os.Stderr, "")
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\n")
@@ -41,22 +45,38 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	values := make(map[string]interface{})
+	dataFiles := []string{}
 	if *dataFile != "" {
-		// Slurp the data file as one byteslice
-		data, err := ioutil.ReadFile(*dataFile)
-		if err != nil {
-			log.Fatalf("Cannot read file %s: %v", *dataFile, err)
-		}
+		dataFiles = strings.Split(*dataFile, ",")
+	}
 
+	allValues := make(map[string]interface{})
+	for _, fname := range dataFiles {
+		if fname == "" {
+			continue
+		}
+		log.Printf("Loading values from %s\n", fname)
+		// Slurp the data file as one byteslice
+		data, err := ioutil.ReadFile(fname)
+		if err != nil {
+			log.Fatalf("Cannot read file %s: %v", fname, err)
+		}
 		// Parse the data file into values
+		values := make(map[string]interface{})
 		if err := yaml.Unmarshal(data, &values); err != nil {
-			log.Fatalf("Cannot parse values from %s: %v", *dataFile, err)
+			log.Fatalf("Cannot parse values from %s: %v", fname, err)
+		}
+		// Merge top level only
+		for km, vm := range values {
+			allValues[km] = vm
 		}
 	}
 
-	for km, vm := range valueMap {
-		values[km] = vm
+	if len(valueMap) > 0 {
+		log.Printf("Loading values from command line\n")
+		for km, vm := range valueMap {
+			allValues[km] = vm
+		}
 	}
 
 	// Render either to STDOUT or to a file
@@ -90,7 +110,7 @@ func main() {
 
 		// Render files directly
 		if !fi.IsDir() {
-			render(out, values, fn)
+			render(out, allValues, fn)
 			continue
 		}
 
@@ -100,7 +120,7 @@ func main() {
 			log.Fatalf("%v", err)
 		}
 		for _, ei := range eis {
-			render(out, values, filepath.Join(fn, ei))
+			render(out, allValues, filepath.Join(fn, ei))
 		}
 	}
 }

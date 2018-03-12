@@ -15,7 +15,7 @@ Or, get it from the source:
 go get github.com/ripta/tpl
 ```
 
-Run it:
+Run it like so:
 
 ```
 tpl -values=test/data/a.yaml -out=rendered.txt test/templates/ok.tpl
@@ -25,4 +25,22 @@ Multiple templates can be provided on the command line. Each template is
 rendered individually using the same values file, and into the same output
 file. The default `-` output file can be used to write to STDOUT.
 
+Multiple value files can be provided as comma-separated paths. Value files are
+evaluated in order; later values override earlier ones. For example:
+
+```
+tpl -values=test/data/b2.yaml,test/data/b1.yaml -out=rendered.txt test/templates/ok.tpl
+```
+
+If `b2.yaml` and `b1.yaml` contain the same keys, then in the above example,
+values in `b1.yaml` will override those in `b2.yaml`. If a key exists in
+`b2.yaml`, but not in `b1.yaml`, then the value in `b2.yaml` are used.
+
+Optional values may be provided on the command line, but the key and value
+would be strings. Command line values override any values that appear in value
+files, with the same override rules. For example:
+
+```
+tpl -value=foo=bar -value=baz=1234 test/templates/ok.tpl
+```
 
