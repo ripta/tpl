@@ -17,6 +17,7 @@ var (
 	dataFile = flag.String("values", "", "YAML file containing values")
 	onError  = flag.String("on-error", "die", "What to do on render error: die, warn, quiet (stop processing without printing), ignore (continue rendering)")
 	outFile  = flag.String("out", "-", "Output file (or '-' for STDOUT)")
+	valueMap = make(valueMapFlag)
 )
 
 var BuildDate string
@@ -29,6 +30,10 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\n")
+}
+
+func init() {
+	flag.Var(&valueMap, "value", "Additional values to inject in the form of key=value")
 }
 
 func main() {
@@ -48,6 +53,10 @@ func main() {
 		if err := yaml.Unmarshal(data, &values); err != nil {
 			log.Fatalf("Cannot parse values from %s: %v", *dataFile, err)
 		}
+	}
+
+	for km, vm := range valueMap {
+		values[km] = vm
 	}
 
 	// Render either to STDOUT or to a file
