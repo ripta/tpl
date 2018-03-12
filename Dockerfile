@@ -7,7 +7,7 @@ RUN apk add --update --no-cache git
 RUN go-wrapper download github.com/ripta/tpl
 RUN go-wrapper install -ldflags "-s -w -X main.BuildVersion=$TPL_VERSION -X main.BuildDate=$TPL_BUILD_DATE" github.com/ripta/tpl
 
-FROM scratch
+FROM alpine:3.7
 COPY --from=build /go/bin/tpl /tpl
 ENTRYPOINT ["/tpl"]
 
