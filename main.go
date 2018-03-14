@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -79,19 +80,6 @@ func main() {
 		}
 	}
 
-	// Render either to STDOUT or to a file
-	var out *os.File
-	var err error
-	if *outFile == "" || *outFile == "-" {
-		out = os.Stdout
-	} else {
-		out, err = os.OpenFile(*outFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
-		if err != nil {
-			log.Fatalf("Cannot open output file %s: %v", *outFile, err)
-		}
-	}
-	defer func() { out.Sync(); out.Close() }()
-
 	if flag.NArg() < 1 {
 		usage()
 		os.Exit(-1)
@@ -110,7 +98,7 @@ func main() {
 
 		// Render files directly
 		if !fi.IsDir() {
-			render(out, allValues, fn)
+			render(allValues, fn, getOutputPath(*outFile, path.Base(fn)))
 			continue
 		}
 
@@ -120,17 +108,62 @@ func main() {
 			log.Fatalf("%v", err)
 		}
 		for _, ei := range eis {
-			render(out, allValues, filepath.Join(fn, ei))
+			render(allValues, filepath.Join(fn, ei), getOutputPath(*outFile, ei))
 		}
 	}
 }
 
-func render(out *os.File, values map[string]interface{}, f string) {
-	log.Printf("Rendering %s\n", f)
+func getOutputPath(base, fn string) string {
+	if base == "" || base == "-" {
+		return "-"
+	}
+	if strings.HasSuffix(fn, ".tpl") {
+		fn = strings.TrimSuffix(fn, ".tpl")
+	} else if strings.HasSuffix(fn, ".tmpl") {
+		fn = strings.TrimSuffix(fn, ".tmpl")
+	}
+	if strings.HasSuffix(base, "/") {
+		return filepath.Join(base, fn)
+	}
+	if f, err := os.Open(base); err == nil {
+		if fi, err := f.Stat(); err == nil {
+			if fi.IsDir() {
+				return filepath.Join(base, fn)
+			}
+		}
+	}
+	return base
+}
 
-	tpl, err := template.New(filepath.Base(f)).Funcs(sprig.TxtFuncMap()).ParseFiles(f)
+func render(values map[string]interface{}, iname, oname string) {
+	if oname == "" {
+		log.Fatalf("Output name cannot be blank")
+	}
+
+	var out *os.File
+	var err error
+	if oname == "-" {
+		out = os.Stdout
+		log.Printf("Rendering %s\n", iname)
+	} else {
+		if strings.Contains(oname, "/") {
+			if err := os.MkdirAll(path.Dir(oname), 0755); err != nil {
+				log.Fatalf("Error creating directory for %q: %v", oname, err)
+			}
+		}
+
+		out, err = os.OpenFile(oname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			log.Fatalf("Cannot open output file %q: %v", oname, err)
+		}
+
+		log.Printf("Rendering %s into %s\n", iname, oname)
+		defer func() { out.Sync(); out.Close() }()
+	}
+
+	tpl, err := template.New(filepath.Base(iname)).Funcs(sprig.TxtFuncMap()).ParseFiles(iname)
 	if err != nil {
-		log.Fatalf("Cannot parse template %s: %v", f, err)
+		log.Fatalf("Cannot parse template %s: %v", iname, err)
 	}
 
 	if *onError == "ignore" {
@@ -145,9 +178,9 @@ func render(out *os.File, values map[string]interface{}, f string) {
 		case "ignore", "quiet":
 			// print nothing, but still fail
 		case "warn":
-			log.Printf("Cannot render template %s: %v", f, err)
+			log.Printf("Cannot render template %s: %v", iname, err)
 		default:
-			log.Fatalf("Cannot render template %s: %v", f, err)
+			log.Fatalf("Cannot render template %s: %v", iname, err)
 		}
 	}
 }
