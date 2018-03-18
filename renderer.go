@@ -80,11 +80,9 @@ func (r *Renderer) getOutputPath(base, fn string) string {
 	if strings.HasSuffix(base, "/") {
 		return filepath.Join(base, fn)
 	}
-	if f, err := os.Open(base); err == nil {
-		if fi, err := f.Stat(); err == nil {
-			if fi.IsDir() {
-				return filepath.Join(base, fn)
-			}
+	if fi, err := FS.Stat(base); err == nil {
+		if fi.IsDir() {
+			return filepath.Join(base, fn)
 		}
 	}
 	return base
@@ -95,19 +93,19 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 		return errors.New("Output name cannot be blank")
 	}
 
-	var out *os.File
+	var out vfs.File
 	var err error
 	if oname == "-" {
 		out = os.Stdout
 		log.Printf("Rendering %s to STDOUT\n", iname)
 	} else {
 		if strings.Contains(oname, "/") {
-			if err := os.MkdirAll(path.Dir(oname), 0755); err != nil {
+			if err := vfs.MkdirAll(FS, path.Dir(oname), 0755); err != nil {
 				return fmt.Errorf("Error creating directory for %q: %v", oname, err)
 			}
 		}
 
-		out, err = os.OpenFile(oname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		out, err = FS.OpenFile(oname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
 			return fmt.Errorf("Cannot open output file %q: %v", oname, err)
 		}
@@ -116,9 +114,14 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 		defer func() { out.Sync(); out.Close() }()
 	}
 
-	tpl, err := template.New(filepath.Base(iname)).Funcs(sprig.TxtFuncMap()).ParseFiles(iname)
+	content, err := vfs.ReadFile(FS, iname)
 	if err != nil {
-		return fmt.Errorf("Cannot parse template %s: %v", iname, err)
+		return fmt.Errorf("Cannot read template %q: %v", iname, err)
+	}
+
+	tpl, err := template.New(filepath.Base(iname)).Funcs(sprig.TxtFuncMap()).Parse(string(content))
+	if err != nil {
+		return fmt.Errorf("Cannot parse template %q: %v", iname, err)
 	}
 
 	if r.StopOnError {
