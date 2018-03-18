@@ -44,3 +44,28 @@ files, with the same override rules. For example:
 tpl -value=foo=bar -value=baz=1234 test/templates/ok.tpl
 ```
 
+## Nested directories
+
+Nested directory structures are supported. Assuming the following templates:
+
+```
+test/templates/deep/ok2.txt.tpl
+test/templates/fail.txt.tpl
+test/templates/ok.txt.tpl
+```
+
+then `tpl ... -out foobar test/templates` will emit:
+
+```
+foobar/templates/deep/ok2.txt
+foobar/templates/fail.txt
+foobar/templates/ok.txt
+```
+
+while `tpl ... -out foobar test/templates/*` will emit:
+
+```
+foobar/deep/ok2.txt
+foobar/fail.txt
+foobar/ok.txt
+```
