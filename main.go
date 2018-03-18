@@ -8,13 +8,6 @@ import (
 	"strings"
 )
 
-var (
-	dataFile = flag.String("values", "", "Comma-separated paths to YAML files containing values (only top-level keys are merged)")
-	onError  = flag.String("on-error", "die", "What to do on render error: die, ignore")
-	outFile  = flag.String("out", "-", "Output file (or '-' for STDOUT)")
-	valueMap = make(valueMapFlag)
-)
-
 var BuildDate string
 var BuildVersion string
 
@@ -30,11 +23,14 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
-func init() {
-	flag.Var(&valueMap, "value", "Additional values to inject in the form of key=value")
-}
-
 func main() {
+	dataFile := flag.String("values", "", "Comma-separated paths to YAML files containing values (only top-level keys are merged)")
+	onError := flag.String("on-error", "die", "What to do on render error: die, ignore")
+	outFile := flag.String("out", "-", "Output file (or '-' for STDOUT)")
+
+	valueMap := make(valueMapFlag)
+	flag.Var(&valueMap, "value", "Additional values to inject in the form of key=value")
+
 	// Parse command line flags
 	flag.Usage = usage
 	flag.Parse()
