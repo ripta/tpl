@@ -54,11 +54,15 @@ func (r *Renderer) execute(inputs []string, out string, values map[string]interf
 		if err != nil {
 			return err
 		}
+
+		names := []string{}
 		for _, ei := range eis {
-			err := r.render(values, filepath.Join(fn, ei.Name()), r.getOutputPath(out, ei.Name()))
-			if err != nil {
-				return err
-			}
+			names = append(names, filepath.Join(f.Name(), ei.Name()))
+		}
+
+		err = r.execute(names, filepath.Join(out, path.Base(f.Name()))+"/", values)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
