@@ -8,8 +8,11 @@ import (
 	"strings"
 )
 
-var BuildDate string
-var BuildVersion string
+// Build information
+var (
+	BuildDate    string
+	BuildVersion string
+)
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "%s v%s built %s\n\n", os.Args[0], BuildVersion, BuildDate)
@@ -63,7 +66,7 @@ func main() {
 		Inputs:      flag.Args(),
 		StopOnError: (*onError != "ignore"),
 	}
-	if err := r.Execute(allValues, *outFile); err != nil {
+	if err := r.Execute(*outFile, allValues); err != nil {
 		log.Fatal(err)
 	}
 }

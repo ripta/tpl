@@ -13,12 +13,14 @@ import (
 	"github.com/Masterminds/sprig"
 )
 
+// Renderer will render a set of inputs.
 type Renderer struct {
 	Inputs      []string
 	StopOnError bool
 }
 
-func (r *Renderer) Execute(values map[string]interface{}, out string) error {
+// Execute applies a dataset against all inputs and writes output.
+func (r *Renderer) Execute(out string, values map[string]interface{}) error {
 	for _, fn := range r.Inputs {
 		f, err := os.Open(fn)
 		if err != nil {
@@ -100,7 +102,6 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 
 		log.Printf("Rendering %s into %s\n", iname, oname)
 		defer func() { out.Sync(); out.Close() }()
-
 	}
 
 	tpl, err := template.New(filepath.Base(iname)).Funcs(sprig.TxtFuncMap()).ParseFiles(iname)
