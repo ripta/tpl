@@ -1,0 +1,8 @@
+FROM golang:1.9.4-alpine3.7 AS build
+
+RUN apk add --update --no-cache git
+RUN mkdir -p /go/src/github.com/ripta/tpl
+VOLUME /go/src/github.com/ripta/tpl
+
+WORKDIR /go/src/github.com/ripta/tpl
+CMD go test github.com/ripta/tpl
