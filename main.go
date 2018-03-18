@@ -56,7 +56,7 @@ func main() {
 
 	if flag.NArg() < 1 {
 		usage()
-		os.Exit(-1)
+		log.Fatalln("At least one <template> path is required.")
 	}
 
 	r := &Renderer{

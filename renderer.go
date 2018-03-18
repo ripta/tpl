@@ -85,22 +85,23 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 	var err error
 	if oname == "-" {
 		out = os.Stdout
-		return fmt.Errorf("Rendering %s", iname)
-	}
-
-	if strings.Contains(oname, "/") {
-		if err := os.MkdirAll(path.Dir(oname), 0755); err != nil {
-			return fmt.Errorf("Error creating directory for %q: %v", oname, err)
+		log.Printf("Rendering %s to STDOUT\n", iname)
+	} else {
+		if strings.Contains(oname, "/") {
+			if err := os.MkdirAll(path.Dir(oname), 0755); err != nil {
+				return fmt.Errorf("Error creating directory for %q: %v", oname, err)
+			}
 		}
-	}
 
-	out, err = os.OpenFile(oname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		return fmt.Errorf("Cannot open output file %q: %v", oname, err)
-	}
+		out, err = os.OpenFile(oname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			return fmt.Errorf("Cannot open output file %q: %v", oname, err)
+		}
 
-	log.Printf("Rendering %s into %s\n", iname, oname)
-	defer func() { out.Sync(); out.Close() }()
+		log.Printf("Rendering %s into %s\n", iname, oname)
+		defer func() { out.Sync(); out.Close() }()
+
+	}
 
 	tpl, err := template.New(filepath.Base(iname)).Funcs(sprig.TxtFuncMap()).ParseFiles(iname)
 	if err != nil {
