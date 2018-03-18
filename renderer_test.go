@@ -3,6 +3,7 @@ package main_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/blang/vfs"
@@ -21,16 +22,17 @@ type fileSpec struct {
 }
 
 type fileTest struct {
-	name   string
-	ins    []fileSpec
-	render renderSpec
-	outs   []fileSpec
+	name      string
+	ins       []fileSpec
+	render    renderSpec
+	renderErr string
+	outs      []fileSpec
 }
 
 var fileTests = []fileTest{
-	//
+	// Simple case: successfully rendering one file to create one file
 	{
-		name: "simple",
+		name: "simple-1to1",
 		ins: []fileSpec{
 			{"/in/test.tpl", "{{.foo}}-baz"},
 		},
@@ -42,6 +44,22 @@ var fileTests = []fileTest{
 			{"/out", "bar-baz"},
 		},
 	},
+	// Simple case: failing to render one file
+	{
+		name: "simple-fail-1",
+		ins: []fileSpec{
+			{"/in/test.tpl", "{{.foo}}-{{.hello}}-test"},
+		},
+		render: renderSpec{
+			[]string{"/in/test.tpl"},
+			"/out",
+		},
+		renderErr: `map has no entry for key "hello"`,
+	},
+}
+
+var staticValues = map[string]interface{}{
+	"foo": "bar",
 }
 
 func TestRendering(t *testing.T) {
@@ -54,12 +72,16 @@ func TestRendering(t *testing.T) {
 				writeFile(t, mem, in.name, in.content)
 			}
 
-			v := make(map[string]interface{})
-			v["foo"] = "bar"
 			r := &tpl.Renderer{test.render.ins, true}
-			err := r.Execute(test.render.out, v)
+			err := r.Execute(test.render.out, staticValues)
 			if err != nil {
-				t.Errorf("Execute: %v", err)
+				if test.renderErr == "" {
+					t.Errorf("Unexpected error during execution: %v", err)
+				} else if !strings.Contains(err.Error(), test.renderErr) {
+					t.Errorf("Different error during execution; got %v, expected %v", err, test.renderErr)
+				}
+			} else if test.renderErr != "" {
+				t.Errorf("Expected execution to fail with %v, but it succeeded", test.renderErr)
 			}
 
 			// dumpFS(t, mem, "/")
