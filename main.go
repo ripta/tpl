@@ -42,7 +42,7 @@ func main() {
 
 	allValues := make(Values)
 	for _, fname := range dataFiles {
-		if err := allValues.Load(fname); err != nil {
+		if err := allValues.LoadFile(fname); err != nil {
 			log.Fatal(err)
 		}
 	}

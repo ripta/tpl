@@ -11,8 +11,9 @@ import (
 // Values is the merged key-value pairs
 type Values map[string]interface{}
 
-// Load will load key-values from fname, and merge them into the current object
-func (v Values) Load(fname string) error {
+// LoadFile will load the contents of fname, parse it for key-value pairs,
+// and merge them into the current object.
+func (v Values) LoadFile(fname string) error {
 	if fname == "" {
 		return fmt.Errorf("Filename must not be empty")
 	}
@@ -22,10 +23,20 @@ func (v Values) Load(fname string) error {
 	if err != nil {
 		return fmt.Errorf("Cannot read file %s: %v", fname, err)
 	}
+	err = v.Load(data)
+	if err != nil {
+		return fmt.Errorf("Cannot parse values from %s: %v", fname, err)
+	}
+	return nil
+}
+
+// Load will parse the data string for key-value pairs, and merge them into
+// the current object.
+func (v Values) Load(data []byte) error {
 	// Parse the data file into values
 	values := make(map[string]interface{})
 	if err := yaml.Unmarshal(data, &values); err != nil {
-		return fmt.Errorf("Cannot parse values from %s: %v", fname, err)
+		return err
 	}
 	// Merge top level only
 	for km, vm := range values {
