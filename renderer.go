@@ -11,7 +11,11 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/blang/vfs"
 )
+
+// FS is a Filesystem interface that can be mocked
+var FS vfs.Filesystem = vfs.OS()
 
 // Renderer will render a set of inputs.
 type Renderer struct {
@@ -22,12 +26,12 @@ type Renderer struct {
 // Execute applies a dataset against all inputs and writes output.
 func (r *Renderer) Execute(out string, values map[string]interface{}) error {
 	for _, fn := range r.Inputs {
-		f, err := os.Open(fn)
+		f, err := vfs.Open(FS, fn)
 		if err != nil {
 			return err
 		}
 
-		fi, err := f.Stat()
+		fi, err := FS.Stat(f.Name())
 		if err != nil {
 			return err
 		}
@@ -42,12 +46,12 @@ func (r *Renderer) Execute(out string, values map[string]interface{}) error {
 		}
 
 		// Loop through each file in a directory and render it
-		eis, err := f.Readdirnames(-1)
+		eis, err := FS.ReadDir(f.Name())
 		if err != nil {
 			return err
 		}
 		for _, ei := range eis {
-			err := r.render(values, filepath.Join(fn, ei), r.getOutputPath(out, ei))
+			err := r.render(values, filepath.Join(fn, ei.Name()), r.getOutputPath(out, ei.Name()))
 			if err != nil {
 				return err
 			}
