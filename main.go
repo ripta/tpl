@@ -3,21 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"path"
-	"path/filepath"
 	"strings"
-	"text/template"
-
-	"github.com/Masterminds/sprig"
-	"gopkg.in/yaml.v2"
 )
 
 var (
 	dataFile = flag.String("values", "", "Comma-separated paths to YAML files containing values (only top-level keys are merged)")
-	onError  = flag.String("on-error", "die", "What to do on render error: die, warn, quiet (stop processing without printing), ignore (continue rendering)")
+	onError  = flag.String("on-error", "die", "What to do on render error: die, ignore")
 	outFile  = flag.String("out", "-", "Output file (or '-' for STDOUT)")
 	valueMap = make(valueMapFlag)
 )
@@ -51,25 +44,10 @@ func main() {
 		dataFiles = strings.Split(*dataFile, ",")
 	}
 
-	allValues := make(map[string]interface{})
+	allValues := make(Values)
 	for _, fname := range dataFiles {
-		if fname == "" {
-			continue
-		}
-		log.Printf("Loading values from %s\n", fname)
-		// Slurp the data file as one byteslice
-		data, err := ioutil.ReadFile(fname)
-		if err != nil {
-			log.Fatalf("Cannot read file %s: %v", fname, err)
-		}
-		// Parse the data file into values
-		values := make(map[string]interface{})
-		if err := yaml.Unmarshal(data, &values); err != nil {
-			log.Fatalf("Cannot parse values from %s: %v", fname, err)
-		}
-		// Merge top level only
-		for km, vm := range values {
-			allValues[km] = vm
+		if err := allValues.Load(fname); err != nil {
+			log.Fatal(err)
 		}
 	}
 
@@ -85,102 +63,11 @@ func main() {
 		os.Exit(-1)
 	}
 
-	for _, fn := range flag.Args() {
-		f, err := os.Open(fn)
-		if err != nil {
-			log.Fatalf("%v\n", err)
-		}
-
-		fi, err := f.Stat()
-		if err != nil {
-			log.Fatalf("%v\n", err)
-		}
-
-		// Render files directly
-		if !fi.IsDir() {
-			render(allValues, fn, getOutputPath(*outFile, path.Base(fn)))
-			continue
-		}
-
-		// Loop through each file in a directory and render it
-		eis, err := f.Readdirnames(-1)
-		if err != nil {
-			log.Fatalf("%v", err)
-		}
-		for _, ei := range eis {
-			render(allValues, filepath.Join(fn, ei), getOutputPath(*outFile, ei))
-		}
+	r := &Renderer{
+		Inputs:      flag.Args(),
+		StopOnError: (*onError != "ignore"),
 	}
-}
-
-func getOutputPath(base, fn string) string {
-	if base == "" || base == "-" {
-		return "-"
-	}
-	if strings.HasSuffix(fn, ".tpl") {
-		fn = strings.TrimSuffix(fn, ".tpl")
-	} else if strings.HasSuffix(fn, ".tmpl") {
-		fn = strings.TrimSuffix(fn, ".tmpl")
-	}
-	if strings.HasSuffix(base, "/") {
-		return filepath.Join(base, fn)
-	}
-	if f, err := os.Open(base); err == nil {
-		if fi, err := f.Stat(); err == nil {
-			if fi.IsDir() {
-				return filepath.Join(base, fn)
-			}
-		}
-	}
-	return base
-}
-
-func render(values map[string]interface{}, iname, oname string) {
-	if oname == "" {
-		log.Fatalf("Output name cannot be blank")
-	}
-
-	var out *os.File
-	var err error
-	if oname == "-" {
-		out = os.Stdout
-		log.Printf("Rendering %s\n", iname)
-	} else {
-		if strings.Contains(oname, "/") {
-			if err := os.MkdirAll(path.Dir(oname), 0755); err != nil {
-				log.Fatalf("Error creating directory for %q: %v", oname, err)
-			}
-		}
-
-		out, err = os.OpenFile(oname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-		if err != nil {
-			log.Fatalf("Cannot open output file %q: %v", oname, err)
-		}
-
-		log.Printf("Rendering %s into %s\n", iname, oname)
-		defer func() { out.Sync(); out.Close() }()
-	}
-
-	tpl, err := template.New(filepath.Base(iname)).Funcs(sprig.TxtFuncMap()).ParseFiles(iname)
-	if err != nil {
-		log.Fatalf("Cannot parse template %s: %v", iname, err)
-	}
-
-	if *onError == "ignore" {
-		tpl.Option("missingkey=zero")
-	} else {
-		tpl.Option("missingkey=error")
-	}
-
-	err = tpl.Execute(out, values)
-	if err != nil {
-		switch *onError {
-		case "ignore", "quiet":
-			// print nothing, but still fail
-		case "warn":
-			log.Printf("Cannot render template %s: %v", iname, err)
-		default:
-			log.Fatalf("Cannot render template %s: %v", iname, err)
-		}
+	if err := r.Execute(allValues, *outFile); err != nil {
+		log.Fatal(err)
 	}
 }
