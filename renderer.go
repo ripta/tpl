@@ -25,7 +25,11 @@ type Renderer struct {
 
 // Execute applies a dataset against all inputs and writes output.
 func (r *Renderer) Execute(out string, values map[string]interface{}) error {
-	for _, fn := range r.Inputs {
+	return r.execute(r.Inputs, out, values)
+}
+
+func (r *Renderer) execute(inputs []string, out string, values map[string]interface{}) error {
+	for _, fn := range inputs {
 		f, err := vfs.Open(FS, fn)
 		if err != nil {
 			return err
