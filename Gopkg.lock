@@ -20,6 +20,12 @@
   version = "v1.0.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/blang/vfs"
+  packages = ["."]
+  revision = "c14afcac17253ce7418da751ec6b1988790cdc8f"
+
+[[projects]]
   name = "github.com/huandu/xstrings"
   packages = ["."]
   revision = "2bf18b218c51864a87384c06996e40ff9dcff8e1"
@@ -40,10 +46,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = [
-    "pbkdf2",
-    "scrypt"
-  ]
+  packages = ["pbkdf2","scrypt"]
   revision = "c7dcf104e3a7a1417abc0230cb0d5240d764159d"
 
 [[projects]]
@@ -55,6 +58,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fff63c6f351dbb80f313c68043512e92d9832afb46fe721c4919393b85f92632"
+  inputs-digest = "dee0eedadc7a0fdaf83c91175969d005972a7d24946f4050464c42e60f733691"
   solver-name = "gps-cdcl"
   solver-version = 1
