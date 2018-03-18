@@ -1,6 +1,8 @@
+VERSION=6
 
 build:
-	docker build -t ripta/tpl:latest -f Dockerfile .
+	docker build --build-arg TPL_BUILD_DATE=$$(date +%Y%m%d-%H%M%S) --build-arg TPL_VERSION=$(VERSION) -t ripta/tpl:v$(VERSION) -f Dockerfile .
+	docker tag ripta/tpl:v$(VERSION) ripta/tpl:latest
 
 test-container: Dockerfile.test
 	docker build -q -t ripta/tpl:test -f Dockerfile.test .
