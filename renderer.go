@@ -11,11 +11,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
-	"github.com/blang/vfs"
 )
-
-// FS is a Filesystem interface that can be mocked
-var FS vfs.Filesystem = vfs.OS()
 
 // Renderer will render a set of inputs.
 type Renderer struct {
@@ -30,12 +26,12 @@ func (r *Renderer) Execute(out string, values map[string]interface{}) error {
 
 func (r *Renderer) execute(inputs []string, out string, values map[string]interface{}) error {
 	for _, fn := range inputs {
-		f, err := vfs.Open(FS, fn)
+		f, err := os.Open(fn)
 		if err != nil {
 			return err
 		}
 
-		fi, err := FS.Stat(f.Name())
+		fi, err := f.Stat()
 		if err != nil {
 			return err
 		}
@@ -50,20 +46,21 @@ func (r *Renderer) execute(inputs []string, out string, values map[string]interf
 		}
 
 		// Loop through each file in a directory and render it
-		eis, err := FS.ReadDir(f.Name())
+		eis, err := f.Readdirnames(-1)
 		if err != nil {
 			return err
 		}
 
 		names := []string{}
 		for _, ei := range eis {
-			names = append(names, filepath.Join(f.Name(), ei.Name()))
+			names = append(names, filepath.Join(f.Name(), ei))
 		}
 
 		err = r.execute(names, filepath.Join(out, path.Base(f.Name()))+"/", values)
 		if err != nil {
 			return err
 		}
+
 	}
 	return nil
 }
@@ -80,9 +77,11 @@ func (r *Renderer) getOutputPath(base, fn string) string {
 	if strings.HasSuffix(base, "/") {
 		return filepath.Join(base, fn)
 	}
-	if fi, err := FS.Stat(base); err == nil {
-		if fi.IsDir() {
-			return filepath.Join(base, fn)
+	if f, err := os.Open(base); err == nil {
+		if fi, err := f.Stat(); err == nil {
+			if fi.IsDir() {
+				return filepath.Join(base, fn)
+			}
 		}
 	}
 	return base
@@ -93,19 +92,19 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 		return errors.New("Output name cannot be blank")
 	}
 
-	var out vfs.File
+	var out *os.File
 	var err error
 	if oname == "-" {
 		out = os.Stdout
 		log.Printf("Rendering %s to STDOUT\n", iname)
 	} else {
 		if strings.Contains(oname, "/") {
-			if err := vfs.MkdirAll(FS, path.Dir(oname), 0755); err != nil {
+			if err := os.MkdirAll(path.Dir(oname), 0755); err != nil {
 				return fmt.Errorf("Error creating directory for %q: %v", oname, err)
 			}
 		}
 
-		out, err = FS.OpenFile(oname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		out, err = os.OpenFile(oname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
 			return fmt.Errorf("Cannot open output file %q: %v", oname, err)
 		}
@@ -114,14 +113,9 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 		defer func() { out.Sync(); out.Close() }()
 	}
 
-	content, err := vfs.ReadFile(FS, iname)
+	tpl, err := template.New(filepath.Base(iname)).Funcs(sprig.TxtFuncMap()).ParseFiles(iname)
 	if err != nil {
-		return fmt.Errorf("Cannot read template %q: %v", iname, err)
-	}
-
-	tpl, err := template.New(filepath.Base(iname)).Funcs(sprig.TxtFuncMap()).Parse(string(content))
-	if err != nil {
-		return fmt.Errorf("Cannot parse template %q: %v", iname, err)
+		return fmt.Errorf("Cannot parse template %s: %v", iname, err)
 	}
 
 	if r.StopOnError {

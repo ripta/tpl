@@ -167,10 +167,8 @@ func TestRendering(t *testing.T) {
 			}
 			defer os.RemoveAll(tmpdir)
 
-			// mem := memfs.Create()
-			// tpl.FS = mem
 			for _, in := range test.ins {
-				writeFile(t, tpl.FS, in.name, in.content)
+				writeFile(t, in.name, in.content)
 			}
 
 			r := &tpl.Renderer{test.render.ins, true}
@@ -186,8 +184,13 @@ func TestRendering(t *testing.T) {
 			}
 
 			for _, out := range test.outs {
-				if actual := readFile(t, tpl.FS, out.name); actual != out.content {
-					dumpFS(t, tpl.FS, tmpdir+"/")
+				content, err := ioutil.ReadFile(out.name)
+				if err != nil {
+					t.Error(err)
+				}
+				actual := string(content)
+				if actual != out.content {
+					dumpFS(t, tmpdir+"/")
 					t.Errorf("Renderer output %s, expected %q, got %q", out.name, out.content, actual)
 				}
 			}
@@ -195,13 +198,14 @@ func TestRendering(t *testing.T) {
 	}
 }
 
-func dumpFS(t *testing.T, fs vfs.Filesystem, dir string) {
+func dumpFS(t *testing.T, dir string) {
 	var dumpRec func(string, int)
 	dumpRec = func(dir string, depthLeft int) {
 		if depthLeft < 0 {
 			t.Errorf("dumpFS: recursed too deep")
 		}
-		fis, err := fs.ReadDir(dir)
+		d, err := os.Open(dir)
+		fis, err := d.Readdir(-1)
 		if err != nil {
 			t.Errorf("Listing %s: %v", dir, err)
 		}
@@ -223,13 +227,13 @@ func readFile(t *testing.T, fs vfs.Filesystem, fp string) string {
 	return string(content)
 }
 
-func writeFile(t *testing.T, fs vfs.Filesystem, fp, content string) {
-	err := vfs.MkdirAll(fs, filepath.Dir(fp), 0755)
+func writeFile(t *testing.T, fp, content string) {
+	err := os.MkdirAll(filepath.Dir(fp), 0755)
 	if err != nil {
 		t.Error(err)
 	}
 
-	f, err := fs.OpenFile(fp, os.O_WRONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile(fp, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		t.Error(err)
 	}
