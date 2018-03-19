@@ -116,6 +116,10 @@ var fileTests = []fileTest{
 			[]string{"in"},
 			"out",
 		},
+		outs: []fileSpec{
+			{"out/in/test1", "#1-bar"},
+			{"out/in/test2", "#2-ripta"},
+		},
 	},
 	// Successfully handle nested input files, preserving output structure
 	{
@@ -128,6 +132,11 @@ var fileTests = []fileTest{
 		render: renderSpec{
 			[]string{"in"},
 			"out",
+		},
+		outs: []fileSpec{
+			{"out/in/test1", "#1-bar"},
+			{"out/in/shallow/test2", "#2-ripta"},
+			{"out/in/rather/deep/nested/dirs/test3", "#3-2.34"},
 		},
 	},
 }
@@ -144,6 +153,10 @@ func TestRendering(t *testing.T) {
 	for _, test := range fileTests {
 		test := test // range capture
 		t.Run(test.name, func(t *testing.T) {
+			if test.outs == nil && test.renderErr == "" {
+				t.Fatal("Invalid test: either test.outs or test.rendererr must be non-empty")
+			}
+
 			tmpdir, err := ioutil.TempDir("", "tpl-test")
 			if err != nil {
 				t.Error(err)
@@ -172,9 +185,9 @@ func TestRendering(t *testing.T) {
 				t.Errorf("Expected execution to fail with %v, but it succeeded", test.renderErr)
 			}
 
-			// dumpFS(t, tpl.FS, tmpdir+"/")
 			for _, out := range test.outs {
 				if actual := readFile(t, tpl.FS, out.name); actual != out.content {
+					dumpFS(t, tpl.FS, tmpdir+"/")
 					t.Errorf("Renderer output %s, expected %q, got %q", out.name, out.content, actual)
 				}
 			}
