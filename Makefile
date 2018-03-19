@@ -1,4 +1,4 @@
-VERSION=6
+VERSION=$(shell git describe | sed -e 's/-g[0-9a-f]*$$//' -e 's/-/./' -e 's/^v//')
 
 build:
 	docker build --build-arg TPL_BUILD_DATE=$$(date +%Y%m%d-%H%M%S) --build-arg TPL_VERSION=$(VERSION) -t ripta/tpl:v$(VERSION) -f Dockerfile .
@@ -16,3 +16,6 @@ test-watch: test-container
 		looper
 
 test: test-once
+
+version:
+	@echo $(VERSION)
