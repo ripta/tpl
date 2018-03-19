@@ -30,113 +30,113 @@ type fileTest struct {
 }
 
 var fileTests = []fileTest{
-	// Successfully render one input file to one output file
+	// Render one input file to one output file
 	{
-		name: "simple-1to1",
+		name: "file-to-file",
 		ins: []fileSpec{
-			{"in/test.tpl", "{{.foo}}-baz"},
+			{"in/test.txt.tpl", "{{.foo}}-baz"},
 		},
 		render: renderSpec{
-			[]string{"in/test.tpl"},
-			"out",
+			[]string{"in/test.txt.tpl"},
+			"out.txt",
 		},
 		outs: []fileSpec{
-			{"out", "bar-baz"},
+			{"out.txt", "bar-baz"},
 		},
 	},
-	// Fails to render one file, because key is missing
+	// Fails to render, because key is missing
 	{
-		name: "simple-fail-1",
+		name: "fail-missing-key",
 		ins: []fileSpec{
-			{"in/test.tpl", "{{.foo}}-{{.hello}}-test"},
+			{"in/test.txt.tpl", "{{.foo}}-{{.hello}}-test"},
 		},
 		render: renderSpec{
-			[]string{"in/test.tpl"},
-			"out",
+			[]string{"in/test.txt.tpl"},
+			"out.txt",
 		},
 		renderErr: `map has no entry for key "hello"`,
 	},
-	// Successfully handle multiple input file by writing to direcory
-	// (a trailing slash in `render.out`)
+	// Render an explicit list of input files to an output directory
+	// (a trailing slash in `out/`)
 	{
-		name: "multifile-to-multifile",
+		name: "list-to-dir",
 		ins: []fileSpec{
-			{"in/test1.tpl", "#1-{{.foo}}"},
-			{"in/test2.tpl", "#2-{{.user.name}}"},
+			{"in/test1.txt.tpl", "#1-{{.foo}}"},
+			{"in/test2.txt.tpl", "#2-{{.user.name}}"},
 		},
 		render: renderSpec{
-			[]string{"in/test1.tpl", "in/test2.tpl"},
+			[]string{"in/test1.txt.tpl", "in/test2.txt.tpl"},
 			"out/",
 		},
 		outs: []fileSpec{
-			{"out/test1", "#1-bar"},
-			{"out/test2", "#2-ripta"},
+			{"out/test1.txt", "#1-bar"},
+			{"out/test2.txt", "#2-ripta"},
 		},
 	},
 	// Succeed to write multiple input file into one single output file
 	{
-		name: "multifile-to-singlefile",
+		name: "list-to-file",
 		ins: []fileSpec{
-			{"in/test1.tpl", "#1-{{.foo}}"},
-			{"in/test2.tpl", "#2-{{.user.name}}"},
+			{"in/test1.txt.tpl", "#1-{{.foo}}"},
+			{"in/test2.txt.tpl", "#2-{{.user.name}}"},
 		},
 		render: renderSpec{
-			[]string{"in/test1.tpl", "in/test2.tpl"},
-			"out",
+			[]string{"in/test1.txt.tpl", "in/test2.txt.tpl"},
+			"out.txt",
 		},
 		outs: []fileSpec{
-			{"out", "#1-bar#2-ripta"},
+			{"out.txt", "#1-bar#2-ripta"},
 		},
 	},
 	// Successfully handle multiple input file by writing to direcory
 	// (a trailing slash in `render.out`)
 	{
-		name: "directory-to-multifile",
+		name: "dir-to-dir",
 		ins: []fileSpec{
-			{"in/test1.tpl", "#1-{{.foo}}"},
-			{"in/test2.tpl", "#2-{{.user.name}}"},
+			{"in/test1.txt.tpl", "#1-{{.foo}}"},
+			{"in/test2.txt.tpl", "#2-{{.user.name}}"},
 		},
 		render: renderSpec{
 			[]string{"in"},
 			"out/",
 		},
 		outs: []fileSpec{
-			{"out/in/test1", "#1-bar"},
-			{"out/in/test2", "#2-ripta"},
+			{"out/in/test1.txt", "#1-bar"},
+			{"out/in/test2.txt", "#2-ripta"},
 		},
 	},
 	// Succeeds, but a bit weird: because input is a directory, output is forced to a directory
 	{
-		name: "directory-to-pretendsinglefile",
+		name: "dir-to-dir2",
 		ins: []fileSpec{
-			{"in/test1.tpl", "#1-{{.foo}}"},
-			{"in/test2.tpl", "#2-{{.user.name}}"},
+			{"in/test1.txt.tpl", "#1-{{.foo}}"},
+			{"in/test2.txt.tpl", "#2-{{.user.name}}"},
 		},
 		render: renderSpec{
 			[]string{"in"},
 			"out",
 		},
 		outs: []fileSpec{
-			{"out/in/test1", "#1-bar"},
-			{"out/in/test2", "#2-ripta"},
+			{"out/in/test1.txt", "#1-bar"},
+			{"out/in/test2.txt", "#2-ripta"},
 		},
 	},
 	// Successfully handle nested input files, preserving output structure
 	{
-		name: "nested-ok",
+		name: "nested-dir-to-dir",
 		ins: []fileSpec{
-			{"in/test1.tpl", "#1-{{.foo}}"},
-			{"in/shallow/test2.tpl", "#2-{{.user.name}}"},
-			{"in/rather/deep/nested/dirs/test3.tpl", "#3-{{.price}}"},
+			{"in/test1.txt.tpl", "#1-{{.foo}}"},
+			{"in/shallow/test2.txt.tpl", "#2-{{.user.name}}"},
+			{"in/rather/deep/nested/dirs/test3.txt.tpl", "#3-{{.price}}"},
 		},
 		render: renderSpec{
 			[]string{"in"},
-			"out",
+			"out/",
 		},
 		outs: []fileSpec{
-			{"out/in/test1", "#1-bar"},
-			{"out/in/shallow/test2", "#2-ripta"},
-			{"out/in/rather/deep/nested/dirs/test3", "#3-2.34"},
+			{"out/in/test1.txt", "#1-bar"},
+			{"out/in/shallow/test2.txt", "#2-ripta"},
+			{"out/in/rather/deep/nested/dirs/test3.txt", "#3-2.34"},
 		},
 	},
 }
