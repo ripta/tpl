@@ -56,7 +56,12 @@ func (r *Renderer) execute(inputs []string, out string, values map[string]interf
 			names = append(names, filepath.Join(f.Name(), ei))
 		}
 
-		err = r.execute(names, filepath.Join(out, path.Base(f.Name()))+"/", values)
+		outpath := out
+		if strings.HasSuffix(out, "/") {
+			outpath = outpath + path.Base(f.Name()) + "/"
+		}
+
+		err = r.execute(names, outpath, values)
 		if err != nil {
 			return err
 		}

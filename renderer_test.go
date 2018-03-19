@@ -107,18 +107,17 @@ var fileTests = []fileTest{
 	},
 	// Succeeds, but a bit weird: because input is a directory, output is forced to a directory
 	{
-		name: "dir-to-dir2",
+		name: "dir-to-file",
 		ins: []fileSpec{
 			{"in/test1.txt.tpl", "#1-{{.foo}}"},
 			{"in/test2.txt.tpl", "#2-{{.user.name}}"},
 		},
 		render: renderSpec{
 			[]string{"in"},
-			"out",
+			"out.txt",
 		},
 		outs: []fileSpec{
-			{"out/in/test1.txt", "#1-bar"},
-			{"out/in/test2.txt", "#2-ripta"},
+			{"out.txt", "#1-bar#2-ripta"},
 		},
 	},
 	// Successfully handle nested input files, preserving output structure
