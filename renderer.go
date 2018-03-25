@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-
-	"github.com/Masterminds/sprig"
 )
 
 // Renderer will render a set of inputs.
@@ -118,7 +116,7 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 		defer func() { out.Sync(); out.Close() }()
 	}
 
-	tpl, err := template.New(filepath.Base(iname)).Funcs(sprig.TxtFuncMap()).ParseFiles(iname)
+	tpl, err := template.New(filepath.Base(iname)).Funcs(funcMap()).ParseFiles(iname)
 	if err != nil {
 		return fmt.Errorf("Cannot parse template %s: %v", iname, err)
 	}
