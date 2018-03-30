@@ -23,7 +23,7 @@ func funcMap() template.FuncMap {
 func baseConvert(from, to int, s string) string {
 	i, err := strconv.ParseInt(s, from, 64)
 	if err != nil {
-		return ""
+		return "0"
 	}
 
 	return strconv.FormatInt(i, to)
