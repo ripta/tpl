@@ -69,3 +69,15 @@ foobar/deep/ok2.txt
 foobar/fail.txt
 foobar/ok.txt
 ```
+
+## Releasing
+
+```
+VERSION=6.0
+
+make test
+git tag -a v$VERSION
+
+make build
+make push
+```
