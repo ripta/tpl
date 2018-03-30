@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 )
@@ -23,6 +24,8 @@ func (r *Renderer) Execute(out string, values map[string]interface{}) error {
 }
 
 func (r *Renderer) execute(inputs []string, out string, values map[string]interface{}) error {
+	// Do not order inputs, which may have been provided in a specific order
+	// from the command line
 	for _, fn := range inputs {
 		f, err := os.Open(fn)
 		if err != nil {
@@ -49,10 +52,13 @@ func (r *Renderer) execute(inputs []string, out string, values map[string]interf
 			return err
 		}
 
-		names := []string{}
+		// Pluck out absolute path names; unlike inputs, these are safe to sort,
+		// because they were generated values
+		names := stringSorter{}
 		for _, ei := range eis {
 			names = append(names, filepath.Join(f.Name(), ei))
 		}
+		sort.Sort(names)
 
 		outpath := out
 		if strings.HasSuffix(out, "/") {
