@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
@@ -10,6 +11,8 @@ import (
 func funcMap() template.FuncMap {
 	f := sprig.TxtFuncMap()
 	f["toYaml"] = toYaml
+	f["trimLeft"] = trimLeft
+	f["trimRight"] = trimRight
 	return f
 }
 
@@ -19,4 +22,12 @@ func toYaml(v interface{}) string {
 		return "" // swallow in-template errors for now
 	}
 	return string(d)
+}
+
+func trimLeft(cut, s string) string {
+	return strings.TrimLeft(s, cut)
+}
+
+func trimRight(cut, s string) string {
+	return strings.TrimRight(s, cut)
 }
