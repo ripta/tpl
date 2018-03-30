@@ -170,7 +170,10 @@ func TestRendering(t *testing.T) {
 				writeFile(t, in.name, in.content)
 			}
 
-			r := &tpl.Renderer{test.render.ins, true}
+			r := &tpl.Renderer{
+				Inputs:      test.render.ins,
+				StopOnError: true,
+			}
 			err = r.Execute(test.render.out, staticValues)
 			if err != nil {
 				if test.renderErr == "" {
