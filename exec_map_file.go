@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 
@@ -72,12 +73,14 @@ func (em *execMap) Get(name string) (*execSetting, error) {
 			return s, nil
 		}
 	}
-	return nil, fmt.Errorf("executable %q is not in whitelist", name)
+	return nil, fmt.Errorf("Executable %q is not in whitelist", name)
 }
 
 func (es *execSetting) Run(args []string, in io.Reader) (string, string, error) {
+	msg := fmt.Sprintf("Executing %q with arguments %+v", es.Path, args)
 	cmd := exec.Command(es.Path, args...)
 	if in != nil {
+		msg = msg + " and STDIN"
 		cmd.Stdin = in
 	}
 
@@ -85,6 +88,10 @@ func (es *execSetting) Run(args []string, in io.Reader) (string, string, error) 
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
+	log.Println(msg)
 	err := cmd.Run()
+	if err != nil {
+		log.Printf("Exited with error: %v", err)
+	}
 	return stdout.String(), stderr.String(), err
 }
