@@ -14,6 +14,7 @@ import (
 
 // Renderer will render a set of inputs.
 type Renderer struct {
+	FuncMap     template.FuncMap
 	Inputs      []string
 	StopOnError bool
 }
@@ -122,7 +123,12 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 		defer func() { out.Sync(); out.Close() }()
 	}
 
-	tpl, err := template.New(filepath.Base(iname)).Funcs(funcMap()).ParseFiles(iname)
+	tpl := template.New(filepath.Base(iname))
+	if r.FuncMap != nil {
+		tpl.Funcs(r.FuncMap)
+	}
+
+	_, err = tpl.ParseFiles(iname)
 	if err != nil {
 		return fmt.Errorf("Cannot parse template %s: %v", iname, err)
 	}

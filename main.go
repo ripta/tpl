@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -28,6 +29,7 @@ func usage() {
 
 func main() {
 	dataFile := flag.String("values", "", "Comma-separated paths to YAML files containing values (only top-level keys are merged)")
+	execMapFile := flag.String("exec-map-file", "", "File from which exec rules can be read")
 	onError := flag.String("on-error", "die", "What to do on render error: die, ignore")
 	outFile := flag.String("out", "-", "Output file (or '-' for STDOUT)")
 
@@ -62,7 +64,43 @@ func main() {
 		log.Fatalln("At least one <template> path is required.")
 	}
 
+	fm := funcMap()
+	if *execMapFile != "" {
+		exmap, err := loadExecMap(*execMapFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// log.Printf("%+v\n", exmap)
+		fm["exec"] = func(name string, args ...string) string {
+			exset, err := exmap.Get(name)
+			if err != nil {
+				log.Printf("could not exec %q %v: %v", name, args, err)
+				return ""
+			}
+			var stdin io.Reader
+			if exset.Stdin {
+				stdin = strings.NewReader(args[len(args)-1])
+				args = args[:len(args)-1]
+			}
+			stdout, stderr, err := exset.Run(args, stdin)
+			if stderr != "" {
+				log.Printf("exec %q %v, STDERR output was: %s", name, args, stderr)
+			}
+			if err != nil {
+				log.Printf("exec %q %v failed with error: %v", name, args, err)
+				return ""
+			}
+			if exset.Stdout {
+				return stdout
+			}
+			if exset.Stderr {
+				return stderr
+			}
+			return ""
+		}
+	}
 	r := &Renderer{
+		FuncMap:     fm,
 		Inputs:      flag.Args(),
 		StopOnError: (*onError != "ignore"),
 	}

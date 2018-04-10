@@ -1,0 +1,21 @@
+paths:
+  - /usr/local/bin
+  - /usr/bin
+  - /bin
+  - /usr/sbin
+  - /sbin
+whitelist:
+  - name: base64
+    stdin: true
+    stdout: true
+  - name: date
+    stdout: true
+  - name: grep
+    stdin: true
+    stdout: true
+  - name: id
+    stdout: true
+  - name: ps
+    stdout: true
+  - name: uuidgen
+    stdout: true
