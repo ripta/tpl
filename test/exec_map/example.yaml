@@ -5,6 +5,8 @@ paths:
   - /usr/sbin
   - /sbin
 whitelist:
+  - name: aws
+    stdout: true
   - name: base64
     stdin: true
     stdout: true
