@@ -65,6 +65,10 @@ func main() {
 	}
 
 	fm := funcMap()
+	fm["exec"] = func(name string, args ...string) string {
+		log.Fatalf("the 'exec' template function is disabled; you must specify -exec-map-file=FILE to enable it")
+		return ""
+	}
 	if *execMapFile != "" {
 		exmap, err := loadExecMap(*execMapFile)
 		if err != nil {
