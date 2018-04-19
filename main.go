@@ -33,6 +33,9 @@ func main() {
 	onError := flag.String("on-error", "die", "What to do on render error: die, ignore")
 	outFile := flag.String("out", "-", "Output file (or '-' for STDOUT)")
 
+	preloadFiles := make(stringSliceFlag, 0)
+	flag.Var(&preloadFiles, "preload", "Additional files to preload")
+
 	valueMap := make(valueMapFlag)
 	flag.Var(&valueMap, "value", "Additional values to inject in the form of key=value")
 
@@ -104,9 +107,10 @@ func main() {
 		}
 	}
 	r := &Renderer{
-		FuncMap:     fm,
-		Inputs:      flag.Args(),
-		StopOnError: (*onError != "ignore"),
+		FuncMap:      fm,
+		Inputs:       flag.Args(),
+		PreloadFiles: preloadFiles,
+		StopOnError:  (*onError != "ignore"),
 	}
 	if err := r.Execute(*outFile, allValues); err != nil {
 		log.Fatal(err)

@@ -14,9 +14,10 @@ import (
 
 // Renderer will render a set of inputs.
 type Renderer struct {
-	FuncMap     template.FuncMap
-	Inputs      []string
-	StopOnError bool
+	FuncMap      template.FuncMap
+	Inputs       []string
+	PreloadFiles []string
+	StopOnError  bool
 }
 
 // Execute applies a dataset against all inputs and writes output.
@@ -40,7 +41,13 @@ func (r *Renderer) execute(inputs []string, out string, values map[string]interf
 
 		// Render files directly
 		if !fi.IsDir() {
-			err := r.render(values, fn, r.getOutputPath(out, path.Base(fn)))
+			withPreloads := make([]string, 0)
+			for _, lib := range r.PreloadFiles {
+				withPreloads = append(withPreloads, lib)
+			}
+			withPreloads = append(withPreloads, fn)
+
+			err := r.render(values, withPreloads, r.getOutputPath(out, path.Base(fn)))
 			if err != nil {
 				return err
 			}
@@ -97,7 +104,7 @@ func (r *Renderer) getOutputPath(base, fn string) string {
 	return base
 }
 
-func (r *Renderer) render(values map[string]interface{}, iname, oname string) error {
+func (r *Renderer) render(values map[string]interface{}, inames []string, oname string) error {
 	if oname == "" {
 		return errors.New("Output name cannot be blank")
 	}
@@ -106,7 +113,7 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 	var err error
 	if oname == "-" {
 		out = os.Stdout
-		log.Printf("Rendering %s to STDOUT\n", iname)
+		log.Printf("Rendering [%s] to STDOUT\n", strings.Join(inames, ", "))
 	} else {
 		if strings.Contains(oname, "/") {
 			if err := os.MkdirAll(path.Dir(oname), 0755); err != nil {
@@ -119,18 +126,18 @@ func (r *Renderer) render(values map[string]interface{}, iname, oname string) er
 			return fmt.Errorf("Cannot open output file %q: %v", oname, err)
 		}
 
-		log.Printf("Rendering %s into %s\n", iname, oname)
+		log.Printf("Rendering [%s] into %s\n", strings.Join(inames, ", "), oname)
 		defer func() { out.Sync(); out.Close() }()
 	}
 
-	tpl := template.New(filepath.Base(iname))
+	tpl := template.New(filepath.Base(inames[len(inames)-1]))
 	if r.FuncMap != nil {
 		tpl.Funcs(r.FuncMap)
 	}
 
-	_, err = tpl.ParseFiles(iname)
+	_, err = tpl.ParseFiles(inames...)
 	if err != nil {
-		return fmt.Errorf("Cannot parse template %s: %v", iname, err)
+		return fmt.Errorf("Cannot parse templates [%s]: %v", strings.Join(inames, ", "), err)
 	}
 
 	if r.StopOnError {

@@ -5,6 +5,20 @@ import (
 	"strings"
 )
 
+type stringSliceFlag []string
+
+func (f *stringSliceFlag) String() string {
+	return fmt.Sprintf("%v", []string(*f))
+}
+
+func (f *stringSliceFlag) Set(value string) error {
+	if value == "" {
+		return fmt.Errorf("Value must not be blank")
+	}
+	*f = append(*f, value)
+	return nil
+}
+
 type valueMapFlag map[string]string
 
 func (m *valueMapFlag) String() string {
