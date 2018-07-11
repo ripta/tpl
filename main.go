@@ -6,7 +6,11 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
+	"plugin"
 	"strings"
+	"text/template"
 )
 
 // Build information
@@ -32,6 +36,7 @@ func main() {
 	execMapFile := flag.String("exec-map-file", "", "File from which exec rules can be read")
 	onError := flag.String("on-error", "die", "What to do on render error: die, ignore")
 	outFile := flag.String("out", "-", "Output file (or '-' for STDOUT)")
+	plugDir := flag.String("plugins-dir", os.Getenv("TPL_PLUGINS"), "Directory from which plugins implementing custom text/template funcs can be loaded dynamically")
 
 	preloadFiles := make(stringSliceFlag, 0)
 	flag.Var(&preloadFiles, "preload", "Additional files to preload")
@@ -104,6 +109,30 @@ func main() {
 				return stderr
 			}
 			return ""
+		}
+	}
+	if soFiles, err := filepath.Glob(path.Join(*plugDir, "*.so")); err != nil {
+		log.Printf("could not search for plugins in directory %q: %v", *plugDir, err)
+	} else {
+		for _, so := range soFiles {
+			plug, err := plugin.Open(so)
+			if err != nil {
+				log.Printf("could not open plugin %q: %v", so, err)
+				continue
+			}
+			sym, err := plug.Lookup("FuncMap")
+			if err != nil {
+				log.Printf("could not lookup symbol 'FuncMap' in plugin %q: %v", so, err)
+				continue
+			}
+			f, ok := sym.(func() template.FuncMap)
+			if !ok {
+				log.Printf("could not assert symbol 'FuncMap' to be of type func() template.FuncMap in plugin %q: %v", so, err)
+				continue
+			}
+			for k, v := range f() {
+				fm[k] = v
+			}
 		}
 	}
 	r := &Renderer{
