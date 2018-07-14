@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -9,25 +8,14 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"plugin"
-	"regexp"
 	"strings"
-	"text/template"
 )
 
+// Build information
 var (
-	// Build information
 	BuildDate    string
 	BuildVersion string
-
-	re *regexp.Regexp
 )
-
-func init() {
-	// match '_' | unicode_letter | unicode_digit
-	// (ie characters valid in template identifiers)
-	re = regexp.MustCompile(`^([_\pL\p{Nd}]+)\.so$`)
-}
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "%s v%s built %s\n\n", os.Args[0], BuildVersion, BuildDate)
@@ -39,33 +27,6 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\n")
-}
-
-func loadPlugin(so *string, fm *template.FuncMap) error {
-	matches := re.FindStringSubmatch(path.Base(*so))
-	if matches == nil {
-		return errors.New("invalid characters in filename - must use underscores and unicode letters/digits only")
-	}
-	ns := matches[1]
-
-	plug, err := plugin.Open(*so)
-	if err != nil {
-		return err
-	}
-	sym, err := plug.Lookup("FuncMap")
-	if err != nil {
-		return err
-	}
-	f, ok := sym.(func() template.FuncMap)
-	if !ok {
-		return errors.New("could not assert symbol 'FuncMap' to be of type func() template.FuncMap")
-	}
-
-	for k, v := range f() {
-		s := fmt.Sprintf("%s_%s", ns, k)
-		(*fm)[s] = v
-	}
-	return nil
 }
 
 func main() {
