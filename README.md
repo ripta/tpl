@@ -95,10 +95,13 @@ func foo() string {
 	return fmt.Sprint("foo")
 }
 ```
-The above code makes it possible to evaluate `{{ foo }}` in templates.
-To build it into a plugin, run:
+Assuming the above code is compiled into myfuncs.so (see how below), tpl can evaluate
+`{{ myfuncs_foo }}` in templates. That is to say, tpl prefixes all functions defined 
+in plugins with the file's name followed by an underscore.
+
+To build this plugin, run:
 ```
-go build -buildmode plugin -o test/plugins/libfoo_func_map.so test/plugins/foo_func_map.go
+go build -buildmode plugin -o test/plugins/myfuncs.so test/plugins/myfuncs.go
 ```
 
 In order for tpl to load your plugins, you must pass the `-plugins-dir $dir` option

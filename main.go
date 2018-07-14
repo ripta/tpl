@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -9,15 +10,24 @@ import (
 	"path"
 	"path/filepath"
 	"plugin"
+	"regexp"
 	"strings"
 	"text/template"
 )
 
-// Build information
 var (
+	// Build information
 	BuildDate    string
 	BuildVersion string
+
+	re *regexp.Regexp
 )
+
+func init() {
+	// match '_' | unicode_letter | unicode_digit
+	// (ie characters valid in template identifiers)
+	re = regexp.MustCompile(`^([_\pL\p{Nd}]+)\.so$`)
+}
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "%s v%s built %s\n\n", os.Args[0], BuildVersion, BuildDate)
@@ -29,6 +39,33 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\n")
+}
+
+func loadPlugin(so *string, fm *template.FuncMap) error {
+	matches := re.FindStringSubmatch(path.Base(*so))
+	if matches == nil {
+		return errors.New("invalid characters in filename - must use underscores and unicode letters/digits only")
+	}
+	ns := matches[1]
+
+	plug, err := plugin.Open(*so)
+	if err != nil {
+		return err
+	}
+	sym, err := plug.Lookup("FuncMap")
+	if err != nil {
+		return err
+	}
+	f, ok := sym.(func() template.FuncMap)
+	if !ok {
+		return errors.New("could not assert symbol 'FuncMap' to be of type func() template.FuncMap")
+	}
+
+	for k, v := range f() {
+		s := fmt.Sprintf("%s_%s", ns, k)
+		(*fm)[s] = v
+	}
+	return nil
 }
 
 func main() {
@@ -111,27 +148,21 @@ func main() {
 			return ""
 		}
 	}
-	if soFiles, err := filepath.Glob(path.Join(*plugDir, "*.so")); err != nil {
-		log.Printf("could not search for plugins in directory %q: %v", *plugDir, err)
+	// Respect `onError` when loading plugins
+	var logf func(string, ...interface{})
+	if *onError != "ignore" {
+		logf = log.Fatalf
+	} else {
+		logf = log.Printf
+	}
+	if _, err := os.Stat(*plugDir); os.IsNotExist(err) {
+		logf("could not search for plugins in directory %q: %v", *plugDir, err)
+	} else if soFiles, err := filepath.Glob(path.Join(*plugDir, "*.so")); err != nil {
+		logf("could not search for plugins in directory %q: %v", *plugDir, err)
 	} else {
 		for _, so := range soFiles {
-			plug, err := plugin.Open(so)
-			if err != nil {
-				log.Printf("could not open plugin %q: %v", so, err)
-				continue
-			}
-			sym, err := plug.Lookup("FuncMap")
-			if err != nil {
-				log.Printf("could not lookup symbol 'FuncMap' in plugin %q: %v", so, err)
-				continue
-			}
-			f, ok := sym.(func() template.FuncMap)
-			if !ok {
-				log.Printf("could not assert symbol 'FuncMap' to be of type func() template.FuncMap in plugin %q: %v", so, err)
-				continue
-			}
-			for k, v := range f() {
-				fm[k] = v
+			if err := loadPlugin(&so, &fm); err != nil {
+				logf("could not load plugin %q: %v", so, err)
 			}
 		}
 	}

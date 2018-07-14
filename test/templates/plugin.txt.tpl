@@ -1,1 +1,1 @@
-I pity a {{ foo }}!
+I pity a {{ myfuncs_foo }}!
