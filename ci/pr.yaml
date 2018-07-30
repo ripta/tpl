@@ -1,0 +1,45 @@
+resource_types:
+  - name: pull-request
+    type: docker-image
+    source:
+      repository: jtarchie/pr
+
+resources:
+  - name: pr
+    type: pull-request
+    source:
+      access_token: {{github_access_token}}
+      private_key: {{github_private_key}}
+      repo: ripta/tpl
+      base: master
+
+jobs:
+  - name: test
+    plan:
+      - get: pr
+        trigger: true
+        version: every
+      - task: make-test
+        privileged: true
+        config:
+          image_resource:
+            type: docker-image
+            source:
+              repository: ripta/tpl
+              tag: test
+          inputs:
+            - name: pr
+          platform: linux
+          run:
+            path: sh
+            args: ['-c', 'cd pr && make test-once']
+        on_success:
+          put: pr
+          params:
+            path: pr
+            status: success
+        on_failure:
+          put: pr
+          params:
+            path: pr
+            status: failure
