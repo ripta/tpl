@@ -32,7 +32,7 @@ jobs:
           platform: linux
           run:
             path: sh
-            args: ['-c', 'cd pr && make test-once']
+            args: ['-c', 'rm -rf /go/src/github.com/ripta/tpl && ln -s $(pwd)/pr /go/src/github.com/ripta/tpl && go test github.com/ripta/tpl']
         on_success:
           put: pr
           params:
