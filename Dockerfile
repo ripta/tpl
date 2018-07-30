@@ -1,5 +1,7 @@
 FROM golang:1.9.4-alpine3.7 AS build
-RUN apk add --update --no-cache git
+RUN apk add --update --no-cache \
+      git \
+      gcc musl-dev
 
 ARG TPL_BUILD_DATE
 ARG TPL_VERSION
