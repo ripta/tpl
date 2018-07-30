@@ -68,7 +68,49 @@ while `tpl ... -out foobar test/templates/*` will emit:
 foobar/deep/ok2.txt
 foobar/fail.txt
 foobar/ok.txt
+
+
+## Plugins
+
+Although it's possible to render captured output from arbitrary commands into your
+templates with `exec`, custom text/template functions written in Go can be built
+into a plugin for direct invocation within templates.
+
+For example:
 ```
+package main
+
+import (
+	"fmt"
+	"text/template"
+)
+
+func FuncMap() template.FuncMap {
+	f := make(template.FuncMap)
+	f["foo"] = foo
+	return f
+}
+
+func foo() string {
+	return fmt.Sprint("foo")
+}
+```
+Assuming the above code is compiled into myfuncs.so (see how below), tpl can evaluate
+`{{ myfuncs_foo }}` in templates. That is to say, tpl prefixes all functions defined 
+in plugins with the file's name followed by an underscore.
+
+To build this plugin, run:
+```
+go build -buildmode plugin -o test/plugins/myfuncs.so test/plugins/myfuncs.go
+```
+
+In order for tpl to load your plugins, you must pass the `-plugins-dir $dir` option
+or export the `TPL_PLUGINS` environment variable, either of which should specify the
+location of your plugins directory:
+```
+tpl -plugins-dir test/plugins -out plugin.txt test/templates/plugin.txt.tpl
+```
+
 
 ## Releasing
 
