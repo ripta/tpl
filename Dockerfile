@@ -1,16 +1,17 @@
-FROM golang:1.9.4-alpine3.7 AS build
-RUN apk add --update --no-cache \
-      git \
-      gcc musl-dev
+FROM golang:1.19.3-bullseye AS build
 
 ARG TPL_BUILD_DATE
 ARG TPL_VERSION
 ENV TPL_BUILD_DATE=$TPL_BUILD_DATE TPL_VERSION=$TPL_VERSION
 
-COPY . /go/src/github.com/ripta/tpl
-RUN go-wrapper install -ldflags "-s -w -X main.BuildVersion=$TPL_VERSION -X main.BuildDate=$TPL_BUILD_DATE" github.com/ripta/tpl
+WORKDIR /go/src/github.com/ripta/tpl
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
 
-FROM alpine:3.7
+COPY . /go/src/github.com/ripta/tpl
+RUN go build -v -o /go/bin/tpl -ldflags "-s -w -X main.BuildVersion=$TPL_VERSION -X main.BuildDate=$TPL_BUILD_DATE" .
+
+FROM debian:bullseye
 COPY --from=build /go/bin/tpl /tpl
 ENTRYPOINT ["/tpl"]
 
