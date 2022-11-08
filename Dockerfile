@@ -9,6 +9,7 @@ COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
 COPY . /go/src/github.com/ripta/tpl
+RUN go test ./...
 RUN go build -v -o /go/bin/tpl -ldflags "-s -w -X main.BuildVersion=$TPL_VERSION -X main.BuildDate=$TPL_BUILD_DATE" .
 
 FROM debian:bullseye
