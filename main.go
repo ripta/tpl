@@ -116,14 +116,16 @@ func main() {
 	} else {
 		logf = log.Printf
 	}
-	if _, err := os.Stat(*plugDir); os.IsNotExist(err) {
-		logf("could not search for plugins in directory %q: %v", *plugDir, err)
-	} else if soFiles, err := filepath.Glob(path.Join(*plugDir, "*.so")); err != nil {
-		logf("could not search for plugins in directory %q: %v", *plugDir, err)
-	} else {
-		for _, so := range soFiles {
-			if err := loadPlugin(&so, &fm); err != nil {
-				logf("could not load plugin %q: %v", so, err)
+	if plugDir != nil && *plugDir != "" {
+		if _, err := os.Stat(*plugDir); os.IsNotExist(err) {
+			logf("could not search for plugins in directory %q: %v", *plugDir, err)
+		} else if soFiles, err := filepath.Glob(path.Join(*plugDir, "*.so")); err != nil {
+			logf("could not search for plugins in directory %q: %v", *plugDir, err)
+		} else {
+			for _, so := range soFiles {
+				if err := loadPlugin(&so, &fm); err != nil {
+					logf("could not load plugin %q: %v", so, err)
+				}
 			}
 		}
 	}
