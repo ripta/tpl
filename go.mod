@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.3
-	github.com/blang/vfs v0.0.0-20170207135758-c14afcac1725
+	github.com/blang/vfs v1.0.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
