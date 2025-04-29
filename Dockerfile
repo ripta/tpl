@@ -1,4 +1,4 @@
-FROM golang:1.19.4-bullseye AS build
+FROM golang:1.24-bookworm AS build
 
 ARG TPL_BUILD_DATE
 ARG TPL_VERSION
@@ -12,7 +12,7 @@ COPY . /go/src/github.com/ripta/tpl
 RUN go test ./...
 RUN go build -v -o /go/bin/tpl -ldflags "-s -w -X main.BuildVersion=$TPL_VERSION -X main.BuildDate=$TPL_BUILD_DATE" .
 
-FROM debian:bullseye
+FROM debian:bookworm
 COPY --from=build /go/bin/tpl /tpl
 ENTRYPOINT ["/tpl"]
 
