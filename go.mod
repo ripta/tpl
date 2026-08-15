@@ -1,6 +1,8 @@
 module github.com/ripta/tpl
 
-go 1.25.0
+go 1.26.0
+
+toolchain go1.26.6
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0

@@ -1,4 +1,4 @@
-FROM golang:1.24-bookworm AS build
+FROM golang:1.26-bookworm AS build
 
 ARG TPL_BUILD_DATE
 ARG TPL_VERSION
@@ -15,4 +15,3 @@ RUN go build -v -o /go/bin/tpl -ldflags "-s -w -X main.BuildVersion=$TPL_VERSION
 FROM debian:bookworm
 COPY --from=build /go/bin/tpl /tpl
 ENTRYPOINT ["/tpl"]
-
