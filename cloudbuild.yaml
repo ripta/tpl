@@ -1,0 +1,15 @@
+steps:
+  - id: build-and-test-container
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        docker build \
+          --pull \
+          --build-arg "TPL_BUILD_DATE=$(date -u +%Y%m%d-%H%M%S)" \
+          --build-arg "TPL_VERSION=$SHORT_SHA" \
+          --file Dockerfile \
+          .
+
+timeout: 1200s
